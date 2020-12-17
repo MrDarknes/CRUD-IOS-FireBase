@@ -17,6 +17,7 @@ import Firebase
 
 class ViewController: UIViewController {
     
+    @IBOutlet weak var idAlumnoTextField: UITextField!
     @IBOutlet weak var resultadoText: UITextView!
     @IBOutlet weak var nombreTextField: UITextField!
     @IBOutlet weak var telefonoTextField: UITextField!
@@ -37,7 +38,7 @@ class ViewController: UIViewController {
     }
     
     func mostrarAlerta(mensaje:String){
-        let alert = UIAlertController(title: "Advertencia", message: mensaje, preferredStyle: .alert)
+        let alert = UIAlertController(title: "Aviso", message: mensaje, preferredStyle: .alert)
         let accionAceptar = UIAlertAction(title: "Aceptar", style: .default) { (_) in
             //nada
         }
@@ -49,6 +50,8 @@ class ViewController: UIViewController {
         nombreTextField.text = ""
         telefonoTextField.text = ""
         edadTextField.text = ""
+        idAlumnoTextField.text = ""
+        resultadoText.text = ""
     }
     
     
@@ -78,10 +81,24 @@ class ViewController: UIViewController {
     }
     
     @IBAction func actualizarButton(_ sender: UIButton) {
+        if nombreTextField.text != "" && telefonoTextField.text != "" && edadTextField.text != "" && idAlumnoTextField.text != "" {
+            var genero : Bool {if generoSwitch.isOn{return true}else{return false}}
+            let edad = Int(edadTextField.text!)!
+            let idUsuario = idAlumnoTextField.text!
+            sobreescribeUsuario(alumnoID: idUsuario, nombre: nombreTextField.text!, telefono: telefonoTextField.text!, edad: edad, genero: genero)
+           
+        } else {
+            mostrarAlerta(mensaje: "Llena todos los campos por favor")
+        }
     }
     
     
     @IBAction func eliminarButton(_ sender: UIButton) {
+        if idAlumnoTextField.text != "" {
+            borrarAlumno(alumnoID: idAlumnoTextField.text!)
+        } else{
+            mostrarAlerta(mensaje: "Ingresa un ID")
+        }
     }
     
     
@@ -146,6 +163,7 @@ class ViewController: UIViewController {
                     let nombre = document.data()["nombre"]!
                     let telefono = document.data()["telefono"]!
                     let edad = document.data()["edad"]!
+                    let idAlumno = document.documentID
                     var genero : String {
                         if (document.data()["genero"] as! Bool){
                             return "Masculino"
@@ -154,29 +172,42 @@ class ViewController: UIViewController {
                         }
                     }
                     self.resultadoText.text += "ID: \(document.documentID)\nNombre: \(nombre)\nTelefono: \(telefono)\nEdad: \(edad)\nGenero: \(genero)\n\n"
+                    self.nombreTextField.text = (nombre as! String)
+                    self.telefonoTextField.text = (telefono as! String)
+                    self.edadTextField.text = String(edad as! Int)
+                    if document.data()["genero"] as! Bool {
+                        self.generoSwitch.setOn(true, animated: true)
+                    } else {
+                        self.generoSwitch.setOn(false, animated: true)
+                    }
+                    self.idAlumnoTextField.text = idAlumno
                 }
             }
         }
         
     }
     
-    func sobreescribeUsuario (alumnoID: String){
+    func sobreescribeUsuario (alumnoID: String, nombre:String, telefono:String,edad:Int,genero:Bool){
         // Add a new document in collection "datosAlumno"
         // Agrega o sobreescribe en la colección un alumno según un ID
         db.collection("datosAlumno").document(alumnoID).setData([
-            "nombre": "Maricarmen Guadalupe",
-            "telefono": "4432299095",
-            "edad": 20,
-            "genero": false
+            "nombre": nombre,
+            "telefono": telefono,
+            "edad": edad,
+            "genero": genero
         ]) { err in
             if let err = err {
                 print("Error writing document: \(err)")
+                self.mostrarAlerta(mensaje: "Error al actualizar")
             } else {
                 print("Document successfully written!")
+                self.mostrarAlerta(mensaje: "Alumno editado con éxito")
+                self.limpiarTextFields()
             }
         }
     }
     
+    //NO SE UTILIZÓ
     func añadirInfoUsuario (alumnoID:String){
         //Añade campos adicionales a un alumno según el ID
         db.collection("datosAlumno").document(alumnoID).setData([ "noControl": "16121300" ], merge: true)
@@ -189,12 +220,13 @@ class ViewController: UIViewController {
         }}
     
     
-    func editarUsuario (alumnoID:String){
+    //NO SE UTILIZÓ
+    func editarUsuario (alumnoID:String, campo:String, valor:Any){
         let alumnoEditable = db.collection("datosAlumno").document(alumnoID)
         
         //Actualiza el campo "nombre" del alumno dado según el ID
         alumnoEditable.updateData([
-            "nombre": "Mari"
+            campo: valor
         ]) { err in
             if let err = err {
                 print("Error updating document: \(err)")
@@ -209,8 +241,11 @@ class ViewController: UIViewController {
         db.collection("datosAlumno").document(alumnoID).delete() { err in
             if let err = err {
                 print("Error removing document: \(err)")
+                self.mostrarAlerta(mensaje: "Error al eliminar")
             } else {
                 print("Document successfully removed!")
+                self.mostrarAlerta(mensaje: "Eliminado con exito")
+                self.limpiarTextFields()
             }
         }
     }
