@@ -9,10 +9,19 @@ import UIKit
 import Firebase
 
 
+//https://firebase.google.com/docs/firestore/quickstart?authuser=0#swift
+//https://firebase.google.com/docs/firestore/manage-data/add-data?authuser=0
+//https://firebase.google.com/docs/firestore/query-data/queries?authuser=0#swift_1
+
 
 
 class ViewController: UIViewController {
     
+    @IBOutlet weak var resultadoText: UITextView!
+    @IBOutlet weak var nombreTextField: UITextField!
+    @IBOutlet weak var telefonoTextField: UITextField!
+    @IBOutlet weak var edadTextField: UITextField!
+    @IBOutlet weak var generoSwitch: UISwitch!
     let db = Firestore.firestore()
     
     override func viewDidLoad() {
@@ -21,21 +30,71 @@ class ViewController: UIViewController {
         
         //agregarUsuario()
         //añadirInfoUsuario(alumnoID: "huRu2cV3TOcllhMTcFqH")
-        borrarInfoUsuario(alumnoID: "huRu2cV3TOcllhMTcFqH")
-        leerUsuarios()
+       // borrarInfoUsuario(alumnoID: "huRu2cV3TOcllhMTcFqH")
+        //buscaAlumno(campo: "nombre", valor: "Oscar")
+        //leerUsuarios()
         
     }
     
-    func agregarUsuario (){
-        // Add a new document with a generated ID
+    func mostrarAlerta(mensaje:String){
+        let alert = UIAlertController(title: "Advertencia", message: mensaje, preferredStyle: .alert)
+        let accionAceptar = UIAlertAction(title: "Aceptar", style: .default) { (_) in
+            //nada
+        }
+        alert.addAction(accionAceptar)
+        present(alert, animated: true)
+    }
+    
+    func limpiarTextFields(){
+        nombreTextField.text = ""
+        telefonoTextField.text = ""
+        edadTextField.text = ""
+    }
+    
+    
+    @IBAction func agregarButton(_ sender: UIButton) {
+        if nombreTextField.text != "" && telefonoTextField.text != "" && edadTextField.text != "" {
+            var genero : Bool {if generoSwitch.isOn{return true}else{return false}}
+            let edad = Int(edadTextField.text!)
+            
+            agregarUsuario(nombre: nombreTextField.text!, telefono: telefonoTextField.text!, edad: edad! , genero:genero)
+            mostrarAlerta(mensaje: "Alumno añadido con éxito")
+            limpiarTextFields()
+        } else {
+            mostrarAlerta(mensaje: "Llena todos los campos por favor")
+        }
+        
+       
+    }
+    
+    
+    @IBAction func buscarButton(_ sender: UIButton) {
+        //SI NO INGRESA UN NOMBRE, BUSCARÁ TODOS
+        if nombreTextField.text == "" {
+            leerUsuarios()
+        } else {
+            buscaAlumno(campo: "nombre", valor: nombreTextField.text!)
+        }
+    }
+    
+    @IBAction func actualizarButton(_ sender: UIButton) {
+    }
+    
+    
+    @IBAction func eliminarButton(_ sender: UIButton) {
+    }
+    
+    
+    
+    func agregarUsuario (nombre:String, telefono:String, edad:Int, genero: Bool){
         // Agrega un nuevo alumno con un ID generado automaticamente
         var ref: DocumentReference? = nil
         
         ref = db.collection("datosAlumno").addDocument(data: [
-            "nombre": "Oscar",
-            "telefono": "4431991750",
-            "edad": 20,
-            "genero": true
+            "nombre": nombre,
+            "telefono": telefono,
+            "edad": edad,
+            "genero": genero
         ]) { err in
             if let err = err {
                 print("Error adding document: \(err)")
@@ -48,12 +107,53 @@ class ViewController: UIViewController {
     }
     
     func leerUsuarios(){
+        //LEE TODOS LOS USUARIOS
         db.collection("datosAlumno").getDocuments() { (querySnapshot, err) in
             if let err = err {
                 print("Error getting documents: \(err)")
             } else {
+                self.resultadoText.text = ""
                 for document in querySnapshot!.documents {
                     print("\(document.documentID) => \(document.data())")
+                    let nombre = document.data()["nombre"]!
+                    let telefono = document.data()["telefono"]!
+                    let edad = document.data()["edad"]!
+                    var genero : String {
+                        if (document.data()["genero"] as! Bool){
+                            return "Masculino"
+                        } else {
+                            return "Femenino"
+                        }
+                    }
+                    self.resultadoText.text += "ID: \(document.documentID)\nNombre: \(nombre)\nTelefono: \(telefono)\nEdad: \(edad)\nGenero: \(genero)\n\n"
+                    
+                }
+            }
+        }
+        
+    }
+    
+    
+    func buscaAlumno(campo : String , valor: Any){
+        // BUSCA alumnos según el campo y el valor indicado
+        db.collection("datosAlumno").whereField(campo, isEqualTo: valor).getDocuments() { (querySnapshot, err) in
+            if let err = err {
+                print("Error getting documents: \(err)")
+            } else {
+                self.resultadoText.text = ""
+                for document in querySnapshot!.documents{
+                    print("\(document.documentID) => \(document.data())")
+                    let nombre = document.data()["nombre"]!
+                    let telefono = document.data()["telefono"]!
+                    let edad = document.data()["edad"]!
+                    var genero : String {
+                        if (document.data()["genero"] as! Bool){
+                            return "Masculino"
+                        } else {
+                            return "Femenino"
+                        }
+                    }
+                    self.resultadoText.text += "ID: \(document.documentID)\nNombre: \(nombre)\nTelefono: \(telefono)\nEdad: \(edad)\nGenero: \(genero)\n\n"
                 }
             }
         }
@@ -87,6 +187,7 @@ class ViewController: UIViewController {
                 print("Document successfully merged!")
             }
         }}
+    
     
     func editarUsuario (alumnoID:String){
         let alumnoEditable = db.collection("datosAlumno").document(alumnoID)
@@ -124,5 +225,9 @@ class ViewController: UIViewController {
                 print("Document successfully updated")
             }
         }
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.view.endEditing(true)
     }
 }

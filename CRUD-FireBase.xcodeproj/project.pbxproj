@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -91,7 +91,6 @@
 				02AA1B2FC0161C5D8E9BA407 /* Pods-CRUD-FireBase.debug.xcconfig */,
 				E76FBB10FC4742A72B9239F2 /* Pods-CRUD-FireBase.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
